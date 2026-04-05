@@ -7,7 +7,7 @@ using namespace std;
 using namespace cv;
 using namespace std::chrono;
 
-// ==================== 配置参数 ====================
+//配置参数
 struct Config {
     Scalar hsv_low = Scalar(0, 120, 180);
     Scalar hsv_high = Scalar(25, 255, 255);
@@ -83,7 +83,7 @@ public:
     steady_clock::time_point state2_start_time;
     bool state2_timer_started = false;
 
-    // 🔴【新增】状态二专用：保存闭合轮廓 + 拟合圆参数
+    // 状态二专用：保存闭合轮廓 + 拟合圆参数
     vector<Point> closed_fan_contour;
     Point2f circle_center;
     float circle_radius;
@@ -160,9 +160,9 @@ public:
         if (best_idx == -1) { cout << "[调试] 状态二：无合格扇叶" << endl; return false; }
 
         auto& best = contours[best_idx];
-        // 🔴【关键】生成闭合轮廓并保存
+        // 生成闭合轮廓并保存
         approxPolyDP(best, closed_fan_contour, arcLength(best, true) * cfg.approx_epsilon, true);
-        // 🔴【关键】保存拟合圆参数
+        // 保存拟合圆参数
         minEnclosingCircle(closed_fan_contour, circle_center, circle_radius);
 
         Point2f c_center;
@@ -306,7 +306,7 @@ public:
     }
 
     void draw(Mat& frame, Mat& hsv) {
-        // 🔴【新增】状态二：绘制闭合轮廓 + 拟合圆
+        // 状态二：绘制闭合轮廓 + 拟合圆
         if (phase == FIND_FAN && !closed_fan_contour.empty()) {
             // 绘制闭合扇叶轮廓（红色，线宽2，完全闭合）
             drawContours(frame, vector<vector<Point>>{closed_fan_contour}, -1, Scalar(0, 0, 255), 2);
