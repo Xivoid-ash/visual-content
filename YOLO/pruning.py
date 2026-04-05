@@ -5,15 +5,14 @@ import torch.nn as nn
 import warnings
 warnings.filterwarnings("ignore")
 
-# ===================== 加载你训练好的稀疏模型 =====================
+#加载稀疏模型
 model = YOLO(r"D:\deeplearning\ultralytics-8.3.163\runs\detect\train\weights\best.pt")
 net = model.model.cpu()
 net.eval()
 
-# ===================== 剪枝比例：40%（最安全）=====================
+#剪枝比例：40%
 prune_ratio = 0.4
 
-# ===================== 收集所有BN层gamma =====================
 bn_modules = []
 for m in net.modules():
     if isinstance(m, nn.BatchNorm2d):
@@ -28,7 +27,7 @@ threshold = np.percentile(all_gamma, prune_ratio * 100)
 print(f"✅ 剪枝比例: {prune_ratio*100}%")
 print(f"✅ 阈值: {threshold:.6f}")
 
-# ===================== 核心：手动剪枝（兼容所有版本）=====================
+
 for m in net.modules():
     if isinstance(m, nn.BatchNorm2d):
         gamma = m.weight.data.abs()
@@ -44,5 +43,4 @@ for m in net.modules():
         m.running_mean = m.running_mean[keep_indices]
         m.running_var = m.running_var[keep_indices]
 
-# ===================== 保存剪枝模型 =====================
 torch.save({"model": net}, "yolov8n_pruned.pt")
