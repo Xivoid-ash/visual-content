@@ -7,7 +7,7 @@ using namespace cv;
 using namespace std;
 using namespace chrono;
 
-// ================== 装甲板识别参数（完全保留你的） ==================
+//装甲板识别参数
 const int LIGHT_MIN_AREA = 300;
 const int LIGHT_MAX_AREA = 100000;
 const float LIGHT_MIN_RATIO = 2.0f;
@@ -18,16 +18,14 @@ const float ARMOR_MAX_ANGLE_DIFF = 8.0f;
 const float ARMOR_MAX_HEIGHT_RATIO = 0.3f;
 const float ARMOR_MAX_WIDTH_RATIO = 4.0f;
 
-// ================== 【新增】相机标定参数（和你之前完全一致） ==================
+//相机标定参数
 const Mat CAMERA_MATRIX = (Mat_<double>(3, 3) <<
     550.0f, 0.0f, 640.0f,
     0.0f, 550.0f, 360.0f,
     0.0f, 0.0f, 1.0f);
 const Mat DIST_COEFFS = (Mat_<double>(1, 5) << 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
-// ================== 【新增】装甲板3D坐标（235mm × 110mm 真实尺寸） ==================
-// 宽度235mm → 左右各 117.5mm
-// 高度110mm → 上下各 55mm
+// 装甲板3D坐标（235mm × 110mm）
 const vector<Point3f> ARMOR_3D_POINTS = {
     Point3f(-117.5f,  55.0f, 0.0f),  // 左上
     Point3f(-117.5f, -55.0f, 0.0f),  // 左下
@@ -35,13 +33,13 @@ const vector<Point3f> ARMOR_3D_POINTS = {
     Point3f(117.5f,  -55.0f, 0.0f)   // 右下
 };
 
-// ================== 灯条结构体（修复：添加角点，用于PnP） ==================
+// 灯条结构体
 struct LightBar {
     RotatedRect rect;
     float angle;
     float height;
     Point2f center;
-    vector<Point2f> corners;  // 新增：灯条4个角点
+    vector<Point2f> corners;  
 
     LightBar(RotatedRect r) {
         rect = r;
@@ -61,7 +59,7 @@ struct LightBar {
     }
 };
 
-// ================== HSV 预处理（完全保留你的） ==================
+//HSV 预处理
 Mat preprocessImage(const Mat& frame, bool is_blue = true) {
     Mat hsv, mask;
     cvtColor(frame, hsv, COLOR_BGR2HSV);
@@ -83,7 +81,7 @@ Mat preprocessImage(const Mat& frame, bool is_blue = true) {
     return mask;
 }
 
-// ================== 检测灯条（完全保留你的） ==================
+// 检测灯条
 vector<LightBar> detectLightBars(const Mat& binary) {
     vector<vector<Point>> contours;
     findContours(binary, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
@@ -105,7 +103,7 @@ vector<LightBar> detectLightBars(const Mat& binary) {
     return light_bars;
 }
 
-// ================== 匹配装甲板（优化：找到第一个立即返回，降延迟） ==================
+// 匹配装甲板
 vector<pair<LightBar, LightBar>> matchArmors(const vector<LightBar>& light_bars) {
     vector<pair<LightBar, LightBar>> armors;
     int n = light_bars.size();
@@ -125,13 +123,13 @@ vector<pair<LightBar, LightBar>> matchArmors(const vector<LightBar>& light_bars)
             if (center_dist / avg_height > ARMOR_MAX_WIDTH_RATIO) continue;
 
             armors.emplace_back(light1, light2);
-            return armors; // ✅ 找到第一个就停，不遍历所有
+            return armors; 
         }
     }
     return armors;
 }
 
-// ================== 【新增】PnP解算距离（和你之前完全一致） ==================
+// PnP解算距离
 float calculateDistance(const pair<LightBar, LightBar>& armor) {
     if (armor.first.corners.size() != 4 || armor.second.corners.size() != 4) return -1.0f;
 
@@ -159,7 +157,7 @@ float calculateDistance(const pair<LightBar, LightBar>& armor) {
     }
 }
 
-// ================== 绘制结果（删除：图像上的文字打印，仅画框） ==================
+//  绘制结果
 void drawResults(Mat& frame, const pair<LightBar, LightBar>& armor) {
     Point2f points1[4], points2[4];
     armor.first.rect.points(points1);
@@ -181,7 +179,7 @@ void drawResults(Mat& frame, const pair<LightBar, LightBar>& armor) {
     rectangle(frame, armor_rect, Scalar(255, 0, 0), 2);
 }
 
-// ================== 主函数（视频读取 + 距离解算 + 终端输出） ==================
+// 主函数
 int main() {
     string video_path = "Resources/armor_video_bule.mp4";
     VideoCapture cap(video_path);
@@ -225,7 +223,7 @@ int main() {
 
         imshow("Armor Detection (Video)", frame);
 
-        int key = waitKey(1); // 1ms 最低延迟播放
+        int key = waitKey(1); 
         if (key == 27) break;
         if (key == 32) waitKey(0);
     }

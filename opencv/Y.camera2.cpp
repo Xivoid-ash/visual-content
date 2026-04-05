@@ -11,7 +11,7 @@ int main() {
     Size boardSize(7, 10);          // 棋盘格内角点数量 (列数, 行数)
     float squareSize = 19.5f;       // 每个棋盘格的物理尺寸
     int imagesToCollect = 10;        //需要采集的标定图像数量
-    string cameraParamFile = "calibration.xml"; // 标定结果保存文件名
+    string cameraParamFile = "calibration.xml"; // 标定结果保存
 
     // 初始化变量 
     vector<vector<Point3f>> objectPoints; // 实际坐标系下的三维点
@@ -27,7 +27,7 @@ int main() {
     }
 
  //  打开摄像头
-    VideoCapture cap(0); // 0为默认摄像头ID，若有多个摄像头请修改
+    VideoCapture cap(0); // 0为默认摄像头
     if (!cap.isOpened()) {
         cerr << "错误：无法打开摄像头！" << endl;
         return -1;
@@ -36,7 +36,7 @@ int main() {
     Mat frame, gray;
     int collected = 0;
     cout << "=== 相机标定程序启动 ===" << endl;
-    cout << "请移动标定板，按 [空格键] 保存当前图像，按 [ESC] 退出采集" << endl;
+    cout << "按 [空格键] 保存当前图像，按 [ESC] 退出采集" << endl;
 
     while (true) {
         cap >> frame;
@@ -86,14 +86,14 @@ int main() {
         return -1;
     }
 
-    //  4. 执行相机标定
+    //  执行相机标定
     Mat cameraMatrix = Mat::eye(3, 3, CV_64F); // 内参矩阵
     Mat distCoeffs = Mat::zeros(5, 1, CV_64F); // 畸变系数 (k1, k2, p1, p2, k3)
     vector<Mat> rvecs, tvecs; // 外参：旋转向量、平移向量
 
     double rms = calibrateCamera(objectPoints, imagePoints, imageSize,
         cameraMatrix, distCoeffs, rvecs, tvecs,
-        CALIB_FIX_K4 | CALIB_FIX_K5); // 固定k4,k5为0（大多数镜头只需5个畸变系数）
+        CALIB_FIX_K4 | CALIB_FIX_K5); // 固定k4,k5为0
 
     // 输出并保存标定结果
     cout << "\n=== 标定完成 ===" << endl;

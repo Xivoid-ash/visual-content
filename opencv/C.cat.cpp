@@ -45,7 +45,7 @@ void onMouse(int event, int x, int y, int flags, void* userdata) {
 }
 
 int main() {
-    img = imread("Resources/cat.png"); // 替换为你的图片路径
+    img = imread("Resources/cat.png"); 
     if (img.empty()) {
         cout << "无法加载图片" << endl;
         return -1;

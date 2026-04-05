@@ -7,7 +7,6 @@ using namespace cv;
 using namespace std;
 using namespace chrono;
 
-// ================== 核心参数（完全保留你的数据） ==================
 const int LIGHT_MIN_AREA = 20;
 const int LIGHT_MAX_AREA = 2000;
 const float LIGHT_MIN_RATIO = 2.0f;
@@ -20,7 +19,7 @@ const float ARMOR_MAX_HEIGHT_RATIO = 0.3f;
 const float ARMOR_MIN_WIDTH_RATIO = 1.0f;
 const float ARMOR_MAX_WIDTH_RATIO = 4.0f;
 
-// ================== 【完全保留你的数据】你的装甲板3D坐标 ==================
+
 // 左右灯条最外沿距离：140mm
 // 单个灯条自身高度：100mm
 const vector<Point3f> ARMOR_3D_POINTS = {
@@ -30,14 +29,14 @@ const vector<Point3f> ARMOR_3D_POINTS = {
     Point3f(70.0f,  -50.0f, 0.0f)   // 3: 右灯条最底部
 };
 
-// ================== 相机内参（完全保留你的数据） ==================
+//相机内参
 const Mat CAMERA_MATRIX = (Mat_<double>(3, 3) <<
     550.0f, 0.0f, 640.0f,
     0.0f, 550.0f, 360.0f,
     0.0f, 0.0f, 1.0f);
 const Mat DIST_COEFFS = (Mat_<double>(1, 5) << 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
-// ================== 灯条结构体（完全保留） ==================
+// 灯条结构体
 struct LightBar {
     RotatedRect rect;
     float angle;
@@ -61,7 +60,7 @@ struct LightBar {
     }
 };
 
-// ================== 图像预处理（完全保留） ==================
+//图像预处理
 Mat preprocessImage(const Mat& frame) {
     Mat hsv, mask;
     cvtColor(frame, hsv, COLOR_BGR2HSV);
@@ -74,7 +73,7 @@ Mat preprocessImage(const Mat& frame) {
     return mask;
 }
 
-// ================== 检测灯条（完全保留） ==================
+//检测灯条
 vector<LightBar> detectLightBars(const Mat& binary) {
     vector<vector<Point>> contours;
     findContours(binary, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
@@ -98,7 +97,7 @@ vector<LightBar> detectLightBars(const Mat& binary) {
     return light_bars;
 }
 
-// ================== 匹配装甲板（找到第一个就停） ==================
+//匹配装甲板
 vector<pair<LightBar, LightBar>> matchArmors(const vector<LightBar>& light_bars) {
     vector<pair<LightBar, LightBar>> armors;
     int n = light_bars.size();
@@ -124,15 +123,15 @@ vector<pair<LightBar, LightBar>> matchArmors(const vector<LightBar>& light_bars)
     return armors;
 }
 
-// ================== PnP解算距离（完全保留） ==================
+//PnP解算距离
 float calculateDistance(const pair<LightBar, LightBar>& armor) {
     if (armor.first.corners.size() != 4 || armor.second.corners.size() != 4) return -1.0f;
 
-    // 区分左右
+    // 左右
     LightBar left_bar = armor.first.center.x < armor.second.center.x ? armor.first : armor.second;
     LightBar right_bar = armor.first.center.x < armor.second.center.x ? armor.second : armor.first;
 
-    // 按Y坐标排序（Y小=顶部，Y大=底部）
+    // 按Y坐标排序
     vector<Point2f> left_corners = left_bar.corners;
     vector<Point2f> right_corners = right_bar.corners;
     sort(left_corners.begin(), left_corners.end(), [](const Point2f& a, const Point2f& b) { return a.y < b.y; });
@@ -140,12 +139,12 @@ float calculateDistance(const pair<LightBar, LightBar>& armor) {
 
     if (left_corners.size() < 4 || right_corners.size() < 4) return -1.0f;
 
-    // 严格按顺序提取2D点：左上、左下、右上、右下
+    // 左上、左下、右上、右下
     vector<Point2f> image_points;
-    image_points.push_back(left_corners[0]);  // 对应3D点0
-    image_points.push_back(left_corners[3]);  // 对应3D点1
-    image_points.push_back(right_corners[0]); // 对应3D点2
-    image_points.push_back(right_corners[3]); // 对应3D点3
+    image_points.push_back(left_corners[0]);  
+    image_points.push_back(left_corners[3]);  
+    image_points.push_back(right_corners[0]); 
+    image_points.push_back(right_corners[3]);
 
     // 解算
     Mat rvec, tvec;
@@ -159,7 +158,7 @@ float calculateDistance(const pair<LightBar, LightBar>& armor) {
     }
 }
 
-// ================== 截取ROI，【已注释提亮/加曝光】 ==================
+//截取ROI，曝光
 Mat cropAndBrightenROI(const Mat& frame, const pair<LightBar, LightBar>& armor) {
     if (frame.empty()) return Mat();
     if (armor.first.corners.size() != 4 || armor.second.corners.size() != 4) return Mat();
@@ -183,9 +182,9 @@ Mat cropAndBrightenROI(const Mat& frame, const pair<LightBar, LightBar>& armor) 
     if (roi_rect.width <= 0 || roi_rect.height <= 0) return Mat();
 
     Mat roi = frame(roi_rect).clone();
-    // Mat bright_roi;
-    // roi.convertTo(bright_roi, -1, 1.5, 50); // 👈 这行是加曝光，已注释
-    return roi; // 直接返回原图裁切，不再提亮
+    Mat bright_roi;
+    roi.convertTo(bright_roi, -1, 1.5, 50); 
+    return bright_roi;
 }
 
 int main() {
@@ -194,7 +193,7 @@ int main() {
     if (frame.empty()) { cerr << "无法读取图片" << endl; return -1; }
     Mat result_frame = frame.clone();
 
-    // =============== 【新增】总延迟计时开始 ===============
+    //延迟计时开始
     auto t_start = high_resolution_clock::now();
 
     Mat binary = preprocessImage(frame);
@@ -222,26 +221,26 @@ int main() {
         Point2f center = (armor.first.center + armor.second.center) / 2.0f;
         circle(result_frame, center, 3, Scalar(0, 0, 255), -1);
 
-        // 计算距离（仅终端输出）
+        // 计算距离
         float dist_mm = calculateDistance(armor);
         if (dist_mm > 0) {
             float dist_cm = dist_mm / 10.0f;
             cout << "装甲板 距离: " << dist_cm << " cm" << endl;
         }
+        //总延迟计时结束
+        auto t_end = high_resolution_clock::now();
+        float total_time_ms = duration_cast<microseconds>(t_end - t_start).count() / 1000.0f;
+        cout << "------------------------" << endl;
+        cout << ">> 总处理延迟: " << total_time_ms << " ms" << endl;
+        cout << "------------------------" << endl;
 
-        // 截取ROI（仅弹窗显示）
+
+        // 截取ROI
         Mat bright_roi = cropAndBrightenROI(frame, armor);
         if (!bright_roi.empty()) {
             imshow("ROI", bright_roi);
         }
     }
-
-    // =============== 【新增】总延迟计时结束+终端输出 ===============
-    auto t_end = high_resolution_clock::now();
-    float total_time_ms = duration_cast<microseconds>(t_end - t_start).count() / 1000.0f;
-    cout << "------------------------" << endl;
-    cout << ">> 总处理延迟: " << total_time_ms << " ms" << endl;
-    cout << "------------------------" << endl;
 
     imshow("Binary", binary);
     imshow("Result", result_frame);
